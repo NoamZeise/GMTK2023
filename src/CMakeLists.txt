@@ -1,4 +1,6 @@
-add_executable(GMTK2023 main.cpp)
+add_executable(GMTK2023
+  main.cpp
+  board.cpp)
 target_link_libraries(GMTK2023 GraphicsEnv)
 
 if(UNIX) # want linux binary to check current dir for libraries
