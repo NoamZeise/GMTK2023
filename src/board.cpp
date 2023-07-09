@@ -51,14 +51,24 @@ Board::Board(Render *render) {
 	render->Load3DModel("models/mountain.obj");
     modelType[(size_t)CounterType::Lake] =
 	render->Load3DModel("models/lake.obj");
+    wateredTileModel = render->Load3DModel("models/watered.obj");
     counterBase = modelMat;
-
-    set(1, 1, CounterType::Forest);
-    set(2, 3, CounterType::Lake);
-    set(4, 4, CounterType::Mountain);
 }
 
-#include <iostream>
+void Board::reset() {
+    won = false;
+    wateredTiles.clear();
+    for(int x = 0; x < 5; x++) {
+	for(int y = 0; y < 5; y++) {
+	    this->board[x * BOARD_WIDTH + y] = CounterType::None;
+	}
+    }
+    boardUpdateRequired = true;
+}
+
+bool Board::wonBoard() { return won; }
+
+bool Board::updating() { return boardUpdateRequired; }
 
 void Board::draw(Render *render) {
     for(auto& sq: squares)
@@ -79,12 +89,103 @@ void Board::draw(Render *render) {
 	    }
 	}
     }
+    for(auto &w: wateredTiles) {
+	Obj3D h = squares[w.x * BOARD_WIDTH + w.y];
+	h.colour = glm::vec4(0.1f, 0.2f, 0.7f, 1.0f);
+	h.modelMat = glm::translate(h.modelMat, glm::vec3(0.0f, 0.4f, 0.0f));
+	h.draw(render);
+    }
+}
+
+CounterType Board::getCounter(int x, int y) {
+    if(x < 0|| x >= BOARD_WIDTH)
+	return CounterType::Mountain;
+    if(y < 0 || y >= BOARD_HEIGHT)
+	return CounterType::Mountain;
+    return board[x * BOARD_WIDTH + y];
+}
+
+Surrounding Board::getSurrounding(int x, int y) {
+    Surrounding s;
+    s.c[(int)Dir::Up] = getCounter(x, y - 1);
+    s.pos[(int)Dir::Up] = {x, y-1};
+    s.c[(int)Dir::Down] = getCounter(x, y + 1);
+    s.pos[(int)Dir::Down] = {x, y+1};
+    s.c[(int)Dir::Left] = getCounter(x - 1, y);
+    s.pos[(int)Dir::Left] = {x-1, y};
+    s.c[(int)Dir::Right] = getCounter(x + 1, y);
+    s.pos[(int)Dir::Right] = {x+1, y};
+    s.c[(int)Dir::UpLeft] = getCounter(x-1, y - 1);
+    s.pos[(int)Dir::UpLeft] = {x-1, y-1};
+    s.c[(int)Dir::UpRight] = getCounter(x + 1, y - 1);
+    s.pos[(int)Dir::UpRight] = {x + 1, y-1};
+    s.c[(int)Dir::DownLeft] = getCounter(x - 1, y+1);
+    s.pos[(int)Dir::DownLeft] = {x-1, y+1};
+    s.c[(int)Dir::DownRight] = getCounter(x + 1, y+1);
+    s.pos[(int)Dir::DownRight] = {x+1, y+1};
+    return s;
 }
 
 void Board::set(unsigned int x, unsigned int y, CounterType type) {
     if(x >= BOARD_WIDTH || y >= BOARD_HEIGHT)
 	throw std::runtime_error("Board Pos out of range!");
     board[x * BOARD_WIDTH + y] = type;
+    boardUpdateRequired = true;
+}
+
+bool Board::set(CounterType type) {
+    if(highlightX == -1 || highlightY == -1 || boardUpdateRequired)
+	return false;
+    if(board[highlightX * BOARD_WIDTH + highlightY] == CounterType::Mountain)
+	return false;
+    set(highlightX, highlightY, type);
+    return true;
+}
+
+#include <iostream>
+
+void Board::stepBoard() {
+    boardUpdateRequired = false;
+    bool emptyTile = false;
+    wateredTiles.clear();
+    std::vector<SetBoard> sets;
+    
+    for(int x = 0; x < BOARD_WIDTH; x++) {
+	for(int y = 0; y < BOARD_HEIGHT; y++) {
+	    CounterType t = board[x * BOARD_WIDTH + y];
+	    if(t == CounterType::None)
+		emptyTile = true;
+	    if(t == CounterType::Mountain)
+		continue;
+	    Surrounding s = getSurrounding(x, y);
+	    bool hasLake = false;
+	    for(int i = 0; i < 4; i++)
+		if(s.c[i] == CounterType::Lake)
+		    hasLake = true;
+	    if(hasLake || t == CounterType::Lake)
+		wateredTiles.push_back(BoardPos(x, y));
+	    if(sets.size() > 0)
+		continue;
+	    if(t == CounterType::Forest) {
+		if(hasLake)
+		    for(int i = 0; i < 4; i++)
+			if(s.c[i] == CounterType::None) {
+			    set(s.pos[i].x, s.pos[i].y, CounterType::Forest);
+			    SetBoard setB;
+			    setB.c = CounterType::Forest;
+			    setB.pos = s.pos[i];
+			    sets.push_back(setB);
+			    break;
+			}
+	    }
+	}
+    }
+
+    if(!emptyTile)
+	won = true;
+    if(sets.size() > 0) {
+	set(sets[0].pos.x, sets[0].pos.y, sets[0].c);
+    }
 }
 
 
