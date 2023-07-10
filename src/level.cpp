@@ -47,9 +47,6 @@ std::vector<BoardPos> getCoords(std::string line) {
     std::vector<BoardPos> board;
     std::vector<std::string> coords = split_string(line, " ");
     for(int i = 1; i < coords.size(); i++) {
-	//std::cout << coords[i] << std::endl;
-	//std::cout << "size: " << coords[i].size() << std::endl;
-	
 	if(coords[i].size() >= 3) {
 	    int x = coords[i][0] - '0';
 	    int y = coords[i][2] - '0';
@@ -69,7 +66,8 @@ std::vector<Level> loadLevels() {
 	auto lines = split_string(std::string(textData), "\n");
 	delete[] textData;
 	if(lines.size() != 4) {
-	    std::cerr << " Wrong number of liens in level file\n";
+	    std::cerr << " Wrong number of lines in level file, name: "
+		      << (i - 1) << ".txt\n";
 	    continue;
 	}
 	std::string F = lines[0];
@@ -92,8 +90,7 @@ std::vector<Level> loadLevels() {
 	    }
 	} for(;i <= HAND_SIZE; i++) {
 	    l.hand[i - 1] = CounterType::None;
-	}
-	
+	}	
 	levels.push_back(l);
     }
     return levels;

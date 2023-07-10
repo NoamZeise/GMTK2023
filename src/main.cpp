@@ -10,6 +10,7 @@
 class App {
 public:
     App(Manager* manager);
+    ~App();
     void update();
     void draw();
     glm::vec3 getRayPos();
@@ -100,6 +101,10 @@ App::App(Manager *manager) {
     nextLevel();
 }
 
+App::~App() {
+    delete manager;
+}
+
 void App::loadAssets() {
     updateTex = manager->render->LoadTexture("textures/update.png");
     updateRect = glmhelper::calcMatFromRect(glm::vec4(0, 0, updateTex.dim.x, updateTex.dim.y),
@@ -138,7 +143,6 @@ glm::vec3 App::getRayPos() {
 				   == RenderFramework::OPENGL ? -1*yPos : yPos) + 1.0f)
 				 / 2.0f) * manager->render->getTargetResolution().y;
     
-    //std::cout << "x: " << xPos << "  y: " << yPos << std::endl;
     glm::vec4 rayClip(xPos, yPos, -1.0f, 1.0f); // NDS
     //to cam space
     glm::vec4 rayCam = projInverse * rayClip;
@@ -171,8 +175,7 @@ void App::nextLevel() {
 void App::update() {
     if(manager->input.kb.press(GLFW_KEY_ESCAPE))
 	glfwSetWindowShouldClose(manager->window, GLFW_TRUE);
-    //cam.update(manager->input, manager->timer);
-
+ 
     if(gameComplete) {
 	if(manager->input.m.press(GLFW_MOUSE_BUTTON_LEFT))
 	    glfwSetWindowShouldClose(manager->window, GLFW_TRUE);
@@ -195,7 +198,6 @@ void App::update() {
 		}
 	    }
 	}
-	
 	boardUpdateTimer += manager->timer.FrameElapsed();
 	if(boardUpdateTimer > boardUpdateDelay) {
 	    boardUpdateTimer = 0.0f;

@@ -40,8 +40,7 @@ Board::Board(Render *render) {
 	    this->board[x * BOARD_WIDTH + y] = CounterType::None;
 	    this->boardTransforms[x * BOARD_WIDTH + y] = Obj3D(Resource::Model(),
 							       pos);
-	    squares.push_back(Obj3D(square, glm::scale(pos, SCALE)));
-			      
+	    squares.push_back(Obj3D(square, glm::scale(pos, SCALE)));		      
 	    squares.back().colour = PIECE_COLOUR;
 	}
     }
@@ -141,8 +140,6 @@ bool Board::set(CounterType type) {
     set(highlightX, highlightY, type);
     return true;
 }
-
-#include <iostream>
 
 void Board::stepBoard() {
     boardUpdateRequired = false;
